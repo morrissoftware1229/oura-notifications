@@ -8,6 +8,7 @@ from flask import Flask, request
 import time
 import threading
 from datetime import date
+import boto3
 
 load_dotenv()
 
@@ -88,3 +89,24 @@ def refresh_access_token(refresh_token):
     response = requests.post(token_url, data=token_data)
     new_tokens = response.json()
     return new_tokens["access_token"], new_tokens["refresh_token"]
+
+# Connection to AWS and SNS
+session = boto3.Session(
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY"),
+    aws_secret_access_key=os.getenv("AWS_SECRET_KEY"),
+    region_name="us-east-1"
+)
+
+sns = boto3.client("sns", region_name="us-east-1")
+topic_arn = os.getenv("SNS_ARN")
+print(topic_arn)
+message = "High stress detected! Take a recovery walk and hydrate."
+subject = "Oura Stress Alert"
+
+if stress_seconds > 0:
+    sns.publish(
+        TopicArn=topic_arn,
+        Message=message,
+        Subject=subject
+    )
+
