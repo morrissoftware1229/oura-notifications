@@ -37,13 +37,13 @@ auth_params = {
     "client_id": CLIENT_ID,
     "redirect_uri": REDIRECT_URI,
     "response_type": "code",
-    "scope": "daily heartrate personal"
+    "scope": "daily stress personal"
 }
 auth_url = f"https://cloud.ouraring.com/oauth/authorize?{urlencode(auth_params)}"
 webbrowser.open(auth_url)
 
 # Gives Flask time to open browswer and retrieve code
-time.sleep(15)
+time.sleep(8)
 
 # Step 2: Exchange authorization code for access token
 # After user authorizes, they'll be redirected to your redirect URI with a code parameter
@@ -62,13 +62,24 @@ access_token = tokens["access_token"]
 refresh_token = tokens["refresh_token"]
 
 # Step 3: Use the access token to make API calls
-headers = {"Authorization": f"Bearer {access_token}"}
-sleep_data = requests.get(
-    "https://api.ouraring.com/v2/usercollection/sleep",
-    headers=headers,
-    params={"start_date": "2025-08-01", "end_date": "2025-08-31"}
-)
-print(json.dumps(sleep_data.json(), indent=2))
+url = 'https://api.ouraring.com/v2/usercollection/daily_stress' 
+params={ 
+    'start_date': '2025-11-01', 
+    'end_date': '2025-11-01' 
+}
+headers = { 
+  'Authorization': f'Bearer {access_token}' 
+}
+response = requests.request('GET', url, headers=headers, params=params).json()
+document_id = response['data'][0]['id']
+
+import requests 
+url = f"https://api.ouraring.com/v2/usercollection/daily_stress/{document_id}"
+headers = { 
+  'Authorization': f'Bearer {access_token}' 
+}
+response = requests.request('GET', url, headers=headers, params=params) 
+print(response.text)
 
 # Step 4: Refresh the token when it expires
 def refresh_access_token(refresh_token):
