@@ -7,10 +7,11 @@ import webbrowser
 from flask import Flask, request
 import time
 import threading
+from datetime import date
 
 load_dotenv()
 
-# Your OAuth2 application credentials
+# OAuth2 application credentials
 CLIENT_ID = os.getenv("OURA_CLIENT_ID")
 CLIENT_SECRET = os.getenv("OURA_CLIENT_SECRET")
 REDIRECT_URI = "http://localhost:5000/callback"
@@ -28,11 +29,11 @@ def callback():
 def run_server():
     app.run(port=5000)
 
-# Starting the server in a background thread
+# Starts the server in a background thread
 threading.Thread(target=run_server, daemon=True).start()
 time.sleep(3)  # brief pause to ensure server starts
 
-# Step 1: Direct user to authorization page
+# Directs user to authorization page
 auth_params = {
     "client_id": CLIENT_ID,
     "redirect_uri": REDIRECT_URI,
@@ -45,8 +46,7 @@ webbrowser.open(auth_url)
 # Gives Flask time to open browswer and retrieve code
 time.sleep(8)
 
-# Step 2: Exchange authorization code for access token
-# After user authorizes, they'll be redirected to your redirect URI with a code parameter
+# Exchanges authorization code for access token
 token_url = "https://api.ouraring.com/oauth/token"
 token_data = {
     "grant_type": "authorization_code",
@@ -61,27 +61,23 @@ print(tokens)
 access_token = tokens["access_token"]
 refresh_token = tokens["refresh_token"]
 
-# Step 3: Use the access token to make API calls
-url = 'https://api.ouraring.com/v2/usercollection/daily_stress' 
+# Uses the access token to get stress information
+url = 'https://api.ouraring.com/v2/usercollection/daily_stress'
+today = date.today().isoformat()
 params={ 
-    'start_date': '2025-11-01', 
-    'end_date': '2025-11-01' 
+    'start_date': f'{today}', 
+    'end_date': f'{today}' 
 }
 headers = { 
   'Authorization': f'Bearer {access_token}' 
 }
 response = requests.request('GET', url, headers=headers, params=params).json()
-document_id = response['data'][0]['id']
+recovery_seconds = response['data'][0]['recovery_high']
+stress_seconds = response['data'][0]['recovery_high']
+print(f"recovery minutes are {recovery_seconds/60}")
+print(f"stress minutes are {stress_seconds/60}")
 
-import requests 
-url = f"https://api.ouraring.com/v2/usercollection/daily_stress/{document_id}"
-headers = { 
-  'Authorization': f'Bearer {access_token}' 
-}
-response = requests.request('GET', url, headers=headers, params=params) 
-print(response.text)
-
-# Step 4: Refresh the token when it expires
+# Refreshes the token when it expires
 def refresh_access_token(refresh_token):
     token_data = {
         "grant_type": "refresh_token",
