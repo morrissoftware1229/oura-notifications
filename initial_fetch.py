@@ -72,7 +72,8 @@ headers = {
   'Authorization': f'Bearer {access_token}' 
 }
 response = requests.request('GET', url, headers=headers, params=params).json()
-stress_seconds = response['data'][0]['recovery_high']
+stress_seconds = response['data'][0]['stress_high']
+stress_minutes = stress_seconds / 60
 
 # Connection to AWS and SNS
 session = boto3.Session(
@@ -85,7 +86,9 @@ client = session.client("secretsmanager")
 
 # Update Secret with Refresh Token for subsequent_fetch Script
 secret_value = {
-    "oura-notification-refresh-token2": f"{refresh_token}"
+    "access-token":f"{access_token}",
+    "oura-notification-refresh-token2": f"{refresh_token}",
+    "stress-minutes": f"{stress_minutes}"
 }
 
 client.put_secret_value(
